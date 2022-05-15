@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <script type="module">
+      import MyVue from '../dist/index.esm.js';
+
+      const app = new MyVue({
+        data: {
+          fullName: 'Icey Won',
+          firstName: 'Icey',
+          lastName: 'Won',
+          favour: [],
+          addr: {
+            city: '北京',
+            stress: '帽儿胡同',
+          },
+          objList: [{ haha: '1' }],
+        },
+        render() {
+          console.log('渲染');
+        },
+        watch: {
+          firstName: [
+            function (newName, oldName) {
+              console.log('one-firstNameChange', newName, oldName);
+            },
+            function (newName, oldName) {
+              console.log('two-firstNameChange', newName, oldName);
+            },
+          ],
+          lastName(newVal, oldVal) {
+            console.log('lastNameChange', newVal, oldVal);
+          },
+          addr: {
+            handler: function (newVal, oldVal) {
+              console.log('addr change,', newVal.city, newVal.stress, oldVal.city, oldVal.stress);
+            },
+            deep: true,
+          },
+          objList: {
+            handler: function (newVal, oldVal) {
+              console.log('objList Changed', newVal);
+            },
+            deep: true,
+          },
+        },
+      });
+      // @ts-ignore
+      // app.firstName = 'haha';
+      // @ts-ignore
+      // app.lastName = 'heiha';
+
+      // @ts-ignore
+      // app.firstName = 'secondchange';
+
+      // @ts-ignore
+      // app.addr.city = '邯郸';
+      // app.addr.stress = '书月胡同';
+      // const obj = { haha: '1' };
+
+      // app.objList.push({ haha: '222' });
+
+      const obj = { haha: '222' };
+      app.objList.push(obj);
+
+      setTimeout(() => {
+        console.log('change objList[0].name');
+        app.objList[0].haha = '666';
+      }, 5000);
+
+      setTimeout(() => {
+        console.log('change obj');
+        obj.haha = '999';
+      }, 10000);
+    </script>
+  </body>
+</html>
