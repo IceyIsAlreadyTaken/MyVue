@@ -200,10 +200,11 @@ test('watch a property with self getter/setter', () => {
   expect(mockFn).toBeCalledTimes(1);
 });
 
-test('deep watch', () => {
+describe('watch options', () => {
   const paramsChanged = jest.fn(function (newVal, oldVal) {
     console.log('searchParams id changed', newVal.id, oldVal.id);
   });
+  const showModalChanged = jest.fn();
   const vm = new MyVue({
     data: {
       showModal: false,
@@ -217,10 +218,46 @@ test('deep watch', () => {
         handler: paramsChanged,
         deep: true,
       },
+      showModal: {
+        handler: showModalChanged,
+        immediate: true,
+      },
+    },
+  });
+  test('deep', () => {
+    vm.searchParams.id = 2;
+    expect(paramsChanged).toBeCalledTimes(1);
+    expect(paramsChanged).toBeCalledWith({ id: 2, name: '' }, { id: 2, name: '' }); // vue深度监听时oldVal也和newVal一样
+  });
+
+  test('immediate', () => {
+    expect(showModalChanged).toBeCalledTimes(1);
+    expect(showModalChanged).toBeCalledWith(false);
+  });
+});
+
+describe('$watch', () => {
+  const vm = new MyVue({
+    data: {
+      showModal: false,
+      pageSize: 30,
+      page: 1,
+      searchData: {
+        id: null,
+      },
+      objList: [{ name: '1' }, { name: '2' }],
     },
   });
 
-  vm.searchParams.id = 2;
-  expect(paramsChanged).toBeCalledTimes(1);
-  expect(paramsChanged).toBeCalledWith({ id: 2, name: '' }, { id: 2, name: '' }); // vue深度监听时oldVal也和newVal一样
+  test('$watch', () => {
+    const showModalChanged = jest.fn();
+    vm.$watch('showModal', showModalChanged);
+    vm.showModal = true;
+    expect(showModalChanged).toBeCalledWith(true, false);
+
+    const searchDataChanged = jest.fn();
+    vm.$watch('searchData', searchDataChanged, { deep: true });
+    vm.searchData.id = '1';
+    expect(searchDataChanged).toBeCalledWith({ id: '1' }, { id: '1' });
+  });
 });

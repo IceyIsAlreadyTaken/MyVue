@@ -8,10 +8,10 @@ export default class Watcher {
   deps: Dep[];
   depIds: Set<number>;
   deep: boolean;
-  getter: (obj: any) => any;
+  getter: Function;
   value: any;
 
-  constructor(vm: any, expOrFn: string, cb: Function, options?: Object) {
+  constructor(vm: any, expOrFn: string | Function, cb: Function, options?: Object) {
     this.cb = cb;
     this.vm = vm;
     this.deps = [];
@@ -33,7 +33,7 @@ export default class Watcher {
   get() {
     Dep.target = this;
     let value = this.getter.call(this.vm, this.vm._data);
-    // TODO: 如果为deep深度监听，需要遍历value底下的所有属性
+    // 如果为deep深度监听，需要遍历value底下的所有属性
     if (this.deep) {
       traverse(value);
     }

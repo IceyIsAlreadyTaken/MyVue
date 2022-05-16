@@ -1,4 +1,4 @@
-import Watcher from '../observe/watcher';
+import MyVue from '../index';
 import { isObject, omit } from '../utils/index';
 
 export function initWatch(vm: any, watch: Record<string, any>) {
@@ -14,7 +14,7 @@ export function initWatch(vm: any, watch: Record<string, any>) {
   }
 }
 
-function createWatcher(vm: object, key: string, handler: any) {
+function createWatcher(vm: MyVue, key: string, handler: any) {
   let options = {};
   if (isObject(handler)) {
     options = omit(handler, 'handler');
@@ -22,5 +22,5 @@ function createWatcher(vm: object, key: string, handler: any) {
   }
   // TODO: 解决handler是方法名的情况
 
-  let watcher = new Watcher(vm, key, handler, options);
+  vm.$watch(key, handler, options);
 }
