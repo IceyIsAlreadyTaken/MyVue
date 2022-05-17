@@ -1,4 +1,4 @@
-import { isObject, def, hasOwn, hasProto } from '../utils/index';
+import { isObject, def, hasOwn, hasProto, isUndef, isValidArrayIndex } from '../utils/index';
 import Dep from './dep';
 import { arrayMethods } from './array';
 
@@ -16,12 +16,49 @@ export function observe(value: any) {
   return ob; // REVIEW return ob的作用
 }
 
+export function set(target: Object | Array<any>, key: string | number, val: any) {
+  if (isUndef(target)) {
+    throw new Error('target is not defined');
+  }
+
+  if (Array.isArray(target)) {
+    // target是数组，且key值有效，则直接将val设置到数组的指定位置
+    if (isValidArrayIndex(key)) {
+      target.length = Math.max(target.length, Number(key));
+      target.splice(key as number, 1, val);
+      return val;
+    }
+  } else {
+    // target是对象，且key值已经是target上存在的值，则直接修改值，会自动触发key的getter/setter
+    if (target.hasOwnProperty(key)) {
+      (target as any)[key] = val;
+      return val;
+    }
+
+    // target是对象，key值不存在target上，但target是无需监听的对象，则直接修改值
+    const ob = (target as any).__ob__;
+    if (!ob) {
+      (target as any)[key] = val;
+      return val;
+    }
+
+    // 以上均为命中，说明是在需要监听的target上添加了一个新属性key
+    defineReactive(target, key, val);
+    ob.dep.notify();
+    return val;
+  }
+}
+
 // Observer类用于把一个object中的所有数据（包括子数据）包装为响应式的，也就是会侦测数据的变化
 // Observer实例会附加到每一个被侦测的object上，
 class Observer {
   dep: Dep;
   constructor(value: Object) {
-    this.dep = new Dep(); // 这里有一个dep实例，主要是用于数组的依赖收集。因为数组在getter中收集依赖，在拦截器中触发依赖，因此这个依赖就需要在getter和拦截器中都能访问到,因此将依赖保存到observer实例上。对于对象的依赖是靠defineReactive函数中的闭包dep来管理的
+    // 这里有一个dep实例，主要是用于
+    // ①数组的依赖收集。因为数组在getter中收集依赖，在拦截器中触发依赖，因此这个依赖就需要在getter和拦截器中都能访问到,因此将依赖保存到observer实例上。对于对象的依赖是靠defineReactive函数中的闭包dep来管理的
+    // ②嵌套对象的依赖收集，比如{a:{b:x}}a属性值是一个对象，对a进行getter/setter设置时，会对其value进行深层的observe得到observer实例childObj，执行childObj.dep.depend()将watcher加入。此后如果对value上通过$set新增一个属性c，则__ob__.dep.notify()即可通知watcher做变更
+    this.dep = new Dep();
+
     def(value, '__ob__', this); // NOTE: 将observer实例绑定到被监听对象的__ob__属性上,observe的时候先判断被监听对象是否有__ob__，避免重复建立监听
     if (Array.isArray(value)) {
       // 数组的监听，只对需要监听的数组修改其原型，避免污染全局Array
@@ -65,7 +102,7 @@ function copyAugment<T extends Record<string, any>, K extends keyof T & string>(
   });
 }
 
-function defineReactive(obj: Object, key: string, value: any) {
+function defineReactive(obj: Object, key: string | number, value: any) {
   // let dep = [];
   let dep = new Dep(); // REVIEW: 这里也有一个dep实例
   // 如果为freeze的对象，不需要再建立变化侦测监听

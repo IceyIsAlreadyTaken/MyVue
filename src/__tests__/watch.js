@@ -254,10 +254,69 @@ describe('$watch', () => {
     vm.$watch('showModal', showModalChanged);
     vm.showModal = true;
     expect(showModalChanged).toBeCalledWith(true, false);
-
+  });
+  test('$watch deep', () => {
     const searchDataChanged = jest.fn();
     vm.$watch('searchData', searchDataChanged, { deep: true });
     vm.searchData.id = '1';
     expect(searchDataChanged).toBeCalledWith({ id: '1' }, { id: '1' });
+  });
+});
+
+describe.only('$set', () => {
+  const objChanged = jest.fn();
+  const listChanged = jest.fn();
+  const freezeObjChanged = jest.fn();
+  const vm = new MyVue({
+    data: {
+      obj: { name: '小明' },
+      list: [],
+      freezeObj: Object.freeze({}),
+    },
+    watch: {
+      obj: { handler: objChanged, deep: true },
+      list: listChanged,
+      freezeObj: freezeObjChanged,
+    },
+  });
+
+  // test('undefined $set',()=>{
+  //   vm.$set(vm.nothing,'a','1');
+  //   expect() // TODO: 验证抛出了错误
+  // })
+
+  test('object $set new property', () => {
+    vm.obj.age = 11;
+    expect(objChanged).not.toBeCalled();
+    vm.$set(vm.obj, 'school', '实验小学');
+    expect(objChanged).toBeCalledWith(
+      { name: '小明', age: 11, school: '实验小学' },
+      { name: '小明', age: 11, school: '实验小学' }
+    );
+
+    // TODO: 能否消除这里添加的属性，保证下一个test是干净的
+  });
+
+  test('object $set already in  property', () => {
+    vm.$set(vm.obj, 'name', '小刚');
+    expect(objChanged).toBeCalled();
+  });
+
+  // test('freeze object $set',()=>{
+  //   vm.$set(vm.freezeObj, 'age', 11);
+  //   expect(freezeObjChanged).not.toBeCalled();
+  // })
+
+  test('array $set a invalid key', () => {
+    vm.$set(vm.list, -2, 'aa');
+    expect(listChanged).not.toBeCalled(); //  vue在index为负数时依然执行了
+    // vm.$set(vm.list, '5', 'aa'); // 这里依然执行了，且和直接调用splice行为不一致，很奇怪
+    // expect(listChanged).not.toBeCalled();
+    // console.log(listChanged.mock.calls);
+  });
+  test('array $set a valid key', () => {
+    vm.$set(vm.list, 2, 'aa');
+    expect(listChanged).toBeCalled();
+    console.log(listChanged.mock.calls);
   });
 });

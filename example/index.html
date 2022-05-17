@@ -21,6 +21,7 @@
             stress: '帽儿胡同',
           },
           objList: [{ haha: '1' }],
+          arr: [],
         },
         render() {
           console.log('渲染');
@@ -49,6 +50,9 @@
             },
             deep: true,
           },
+          arr: function (newVal, old) {
+            console.log('newVal=>>>', newVal);
+          },
         },
       });
       // @ts-ignore
@@ -68,6 +72,8 @@
 
       const obj = { haha: '222' };
       app.objList.push(obj);
+
+      app.$set(app.arr, -2, '11');
 
       setTimeout(() => {
         console.log('change objList[0].name');
