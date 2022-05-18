@@ -263,21 +263,24 @@ describe('$watch', () => {
   });
 });
 
-describe.only('$set', () => {
+describe('$set', () => {
   const objChanged = jest.fn();
   const listChanged = jest.fn();
   const freezeObjChanged = jest.fn();
-  const vm = new MyVue({
-    data: {
-      obj: { name: '小明' },
-      list: [],
-      freezeObj: Object.freeze({}),
-    },
-    watch: {
-      obj: { handler: objChanged, deep: true },
-      list: listChanged,
-      freezeObj: freezeObjChanged,
-    },
+  let vm;
+
+  beforeEach(() => {
+    vm = new MyVue({
+      data: {
+        obj: { name: '小明' },
+        list: [],
+        freezeObj: {},
+      },
+      watch: {
+        obj: { handler: objChanged, deep: true },
+        list: listChanged,
+      },
+    });
   });
 
   // test('undefined $set',()=>{
@@ -285,27 +288,25 @@ describe.only('$set', () => {
   //   expect() // TODO: 验证抛出了错误
   // })
 
-  test('object $set new property', () => {
+  test('not using $set', () => {
     vm.obj.age = 11;
     expect(objChanged).not.toBeCalled();
-    vm.$set(vm.obj, 'school', '实验小学');
-    expect(objChanged).toBeCalledWith(
-      { name: '小明', age: 11, school: '实验小学' },
-      { name: '小明', age: 11, school: '实验小学' }
-    );
-
-    // TODO: 能否消除这里添加的属性，保证下一个test是干净的
   });
 
   test('object $set already in  property', () => {
-    vm.$set(vm.obj, 'name', '小刚');
-    expect(objChanged).toBeCalled();
+    vm.$set(vm.obj, 'name', '小刚'); // REVIEW: 必须指定深度监听obj？？？
+    expect(objChanged).toBeCalledWith({ name: '小刚' }, { name: '小刚' });
   });
 
-  // test('freeze object $set',()=>{
-  //   vm.$set(vm.freezeObj, 'age', 11);
-  //   expect(freezeObjChanged).not.toBeCalled();
-  // })
+  test('object $set new property', () => {
+    vm.$set(vm.obj, 'school', '实验小学');
+    expect(objChanged).toBeCalledWith({ name: '小明', school: '实验小学' }, { name: '小明', school: '实验小学' });
+  });
+
+  test('no observer object $set', () => {
+    vm.$set(vm.freezeObj, 'age', 11);
+    expect(vm.freezeObj).toHaveProperty('age');
+  });
 
   test('array $set a invalid key', () => {
     vm.$set(vm.list, -2, 'aa');
@@ -314,9 +315,59 @@ describe.only('$set', () => {
     // expect(listChanged).not.toBeCalled();
     // console.log(listChanged.mock.calls);
   });
+
   test('array $set a valid key', () => {
     vm.$set(vm.list, 2, 'aa');
     expect(listChanged).toBeCalled();
     console.log(listChanged.mock.calls);
+  });
+});
+
+describe('$delete', () => {
+  const objChanged = jest.fn();
+  const listChanged = jest.fn();
+  let vm;
+  beforeEach(() => {
+    vm = new MyVue({
+      data: {
+        obj: {
+          age: 11,
+          school: '实验小学',
+        },
+        list: [1, 2, 3],
+        freezeObj: { age: 11, school: '实验小学' },
+      },
+      watch: {
+        obj: objChanged,
+        list: listChanged,
+      },
+    });
+  });
+
+  test('not use $delete', () => {
+    delete vm.obj.age;
+    expect(objChanged).not.toBeCalled();
+  });
+
+  test('object $delete a no in key', () => {
+    vm.$delete(vm.obj, 'friend');
+    expect(objChanged).not.toBeCalled();
+  });
+
+  test('object $delete ', () => {
+    vm.$delete(vm.obj, 'age');
+    expect(objChanged).toBeCalledWith({ school: '实验小学' }, { school: '实验小学' });
+  });
+
+  test('no observer object  $delete', () => {
+    vm.$delete(vm.freezeObj, 'age');
+    expect(vm.freezeObj).not.toHaveProperty('age');
+    expect(vm.freezeObj).toEqual({
+      school: '实验小学',
+    });
+  });
+  test('array  $delete', () => {
+    vm.$delete(vm.list, 1);
+    expect(listChanged).toBeCalledWith([1, 3], [1, 3]);
   });
 });

@@ -22,31 +22,52 @@ export function set(target: Object | Array<any>, key: string | number, val: any)
   }
 
   if (Array.isArray(target)) {
-    // target是数组，且key值有效，则直接将val设置到数组的指定位置
+    // target是数组，将val设置到数组的指定位置
     if (isValidArrayIndex(key)) {
       target.length = Math.max(target.length, Number(key));
       target.splice(key as number, 1, val);
       return val;
     }
   } else {
-    // target是对象，且key值已经是target上存在的值，则直接修改值，会自动触发key的getter/setter
+    // 对象已有的属性值直接修改值，会自动触发key的getter/setter
     if (target.hasOwnProperty(key)) {
       (target as any)[key] = val;
       return val;
     }
 
-    // target是对象，key值不存在target上，但target是无需监听的对象，则直接修改值
+    // target为普通对象，则直接修改值
     const ob = (target as any).__ob__;
     if (!ob) {
       (target as any)[key] = val;
       return val;
     }
 
-    // 以上均为命中，说明是在需要监听的target上添加了一个新属性key
+    // 新增的属性，将属性添加为可观测属性值，并手动触发通知
     defineReactive(target, key, val);
     ob.dep.notify();
     return val;
   }
+}
+
+export function del(target: Object | Array<any>, key: string | number) {
+  // 数组调用splice方法删除，若是监听属性会自动触发通知
+  if (Array.isArray(target) && isValidArrayIndex(key)) {
+    target.splice(key as number, 1);
+    return;
+  }
+  // NOTE: 不要忘记处理key不是target属性的情况
+  if (!hasOwn(target, key)) {
+    return;
+  }
+  // 删除属性
+  delete (target as any)[key];
+  // 如果是设置了监听的对象，删除后手动触发通知
+  const ob = (target as any).__ob__;
+  if (!ob) {
+    return;
+  }
+  ob.dep.notify();
+  return;
 }
 
 // Observer类用于把一个object中的所有数据（包括子数据）包装为响应式的，也就是会侦测数据的变化

@@ -1,7 +1,7 @@
 import { observe } from './observe/index';
 import { initWatch } from './instance/state';
 import Watcher from './observe/watcher';
-import { set } from './observe/index';
+import { set, del } from './observe/index';
 
 function proxyData(obj: Object, data: Record<string, any>) {
   for (let key in data) {
@@ -21,6 +21,7 @@ function proxyData(obj: Object, data: Record<string, any>) {
 export default class MyVue {
   _data: Object = {};
   $set = set;
+  $delete = del;
   constructor(options: { data: any; [prop: string]: any }) {
     // 初始化options
     this.init(options);

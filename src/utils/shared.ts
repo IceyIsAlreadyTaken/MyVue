@@ -23,7 +23,7 @@ export function def(obj: Object, key: string, value: any, enumerable?: boolean) 
   });
 }
 
-export function hasOwn(obj: Object, key: string) {
+export function hasOwn(obj: Object, key: string | number) {
   return Object.prototype.hasOwnProperty.call(obj, key); // NOTE: 通过call借用方法，不用判断obj的类型是否为object了
 }
 
@@ -34,6 +34,5 @@ export function isUndef(value: any): boolean {
 export function isValidArrayIndex(val: any): boolean {
   const n = parseFloat(String(val));
   const rs = n >= 0 && Math.floor(n) === n && isFinite(val);
-  console.log(rs);
   return rs;
 }
